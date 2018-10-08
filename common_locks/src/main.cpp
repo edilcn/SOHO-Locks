@@ -327,8 +327,8 @@ void loop() {
  }
  if (uid != ""){
    pson data;
-   data["lockID"] = DEVICE_ID;
-   data["rfid_UID"] = uid;
+   data["lock_id"] = DEVICE_ID;
+   data["rfid_uid"] = uid;
    thing.call_endpoint("device_post", data);
    Serial.println("Endpoint chamado");
    uid = "";
