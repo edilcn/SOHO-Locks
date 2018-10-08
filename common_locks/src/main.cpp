@@ -18,8 +18,8 @@
 // #define DEVICE_CREDENTIAL "gAiu$u1wGJ9D"
 
 #define USERNAME "SHLabs"
-#define DEVICE_ID "lock205"         
-#define DEVICE_CREDENTIAL "08B8p0r9v1$w"
+#define DEVICE_ID "lockcw1"         
+#define DEVICE_CREDENTIAL "9&12ipS&Ab26"
 
 // Informações do WiFi
 #define SSID_STA "soholabs"
