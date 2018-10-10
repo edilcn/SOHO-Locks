@@ -18,8 +18,8 @@
 // #define DEVICE_CREDENTIAL "gAiu$u1wGJ9D"
 
 #define USERNAME "SHLabs"
-#define DEVICE_ID "lock0"
-#define DEVICE_CREDENTIAL "lXRkg%odXWp@"
+#define DEVICE_ID "test"
+#define DEVICE_CREDENTIAL "qXqg0bOzy6X3"
 
 // Informações do WiFi
 #define SSID_STA "soholabs"
@@ -364,33 +364,33 @@ bool userCheck(String uid){
 void onlineMode(){
   if (NEXT_OPERATION_MODE != OPERATION_MODE){
     if (NEXT_OPERATION_MODE == "normal"){
-      digitalWrite(VOLT_PIN, HIGH);
-      digitalWrite(RINT_PIN, LOW);
-      digitalWrite(REXT_PIN, LOW);
+      digitalWrite(VOLT_PIN, LOW);
+      digitalWrite(RINT_PIN, HIGH);
+      digitalWrite(REXT_PIN, HIGH);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
     if (NEXT_OPERATION_MODE == "night"){
-      digitalWrite(VOLT_PIN, HIGH);
-      digitalWrite(RINT_PIN, HIGH);
-      digitalWrite(REXT_PIN, LOW);
+      digitalWrite(VOLT_PIN, LOW);
+      digitalWrite(RINT_PIN, LOW);
+      digitalWrite(REXT_PIN, HIGH);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
     if (NEXT_OPERATION_MODE == "open"){
+      digitalWrite(VOLT_PIN, HIGH);
+      digitalWrite(RINT_PIN, HIGH);
+      digitalWrite(REXT_PIN, HIGH);
+      OPERATION_MODE = NEXT_OPERATION_MODE;
+    }
+    if (NEXT_OPERATION_MODE == "close"){
       digitalWrite(VOLT_PIN, LOW);
       digitalWrite(RINT_PIN, LOW);
       digitalWrite(REXT_PIN, LOW);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
-    if (NEXT_OPERATION_MODE == "close"){
-      digitalWrite(VOLT_PIN, HIGH);
-      digitalWrite(RINT_PIN, HIGH);
-      digitalWrite(REXT_PIN, HIGH);
-      OPERATION_MODE = NEXT_OPERATION_MODE;
-    }
     if (NEXT_OPERATION_MODE == "locked"){
-      digitalWrite(VOLT_PIN, HIGH);
-      digitalWrite(RINT_PIN, HIGH);
-      digitalWrite(REXT_PIN, HIGH);
+      digitalWrite(VOLT_PIN, LOW);
+      digitalWrite(RINT_PIN, LOW);
+      digitalWrite(REXT_PIN, LOW);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
   }
@@ -407,13 +407,13 @@ void onlineMode(){
 
 void openDoor(){
   doorTimer = millis()+6000;
-  digitalWrite(VOLT_PIN, LOW);
+  digitalWrite(VOLT_PIN, HIGH);
 }
 
 void closeDoor(){
   if (doorTimer != 0)
     if (millis() > doorTimer){
-      digitalWrite(VOLT_PIN, HIGH);
+      digitalWrite(VOLT_PIN, LOW);
       doorTimer = 0;
     }
 }
@@ -446,9 +446,9 @@ void setup() {
   pinMode(VOLT_PIN, OUTPUT);
   pinMode(RINT_PIN, OUTPUT);
   pinMode(REXT_PIN, OUTPUT);
-  digitalWrite(VOLT_PIN, HIGH);
-  digitalWrite(RINT_PIN, HIGH);
-  digitalWrite(REXT_PIN, LOW);
+  digitalWrite(VOLT_PIN, LOW);
+  digitalWrite(RINT_PIN, LOW);
+  digitalWrite(REXT_PIN, HIGH);
 
 
   thing.add_wifi(SSID_STA, SSID_PASSWORD);
@@ -487,6 +487,11 @@ void setup() {
       openDoor();
       ledCounter = 0;
       ledMode = "blink-green";
+    }
+    else if (number == 2){
+      openDoor();
+      ledCounter = 0;
+      ledMode = "blink-yellow";
     }
   };
 
@@ -613,8 +618,8 @@ void loop() {
   }
   if (uid != ""){
     pson data;
-    data["lockID"] = DEVICE_ID;
-    data["rfid_UID"] = uid;
+    data["lock_id"] = DEVICE_ID;
+    data["rfid_uid"] = uid;
     thing.call_endpoint("device_post", data);
     Serial.println("Endpoint chamado");
     uid = "";
