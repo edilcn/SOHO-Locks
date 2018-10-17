@@ -86,6 +86,9 @@ String r_weekdays;                                                              
 
 int value;
 
+String Log;
+uint32_t minutes;
+
 
 /*------------------------------Rotinas LED----------------------------------*/
 void ledController(){
@@ -380,6 +383,12 @@ void onlineMode(){
   }
 }
 
+void notification(){
+  Log = "";
+  Log += "Time: ";
+  Log += 5*(minutes++);
+}
+
 void openDoor(){
   doorTimer = millis()+6000;
   digitalWrite(VOLT_PIN, LOW);
@@ -513,6 +522,10 @@ void setup() {
   thing["check"] << [](pson& in){
     String checkuid = in;
     userInfo(checkuid);
+  };
+
+  thing["notification"] >> [](pson& out){
+    out = Log;
   };
 
   // set OTA hostname
