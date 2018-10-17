@@ -1,4 +1,4 @@
-#define THINGER_SERVER "172.100.100.22"
+ #define THINGER_SERVER "172.100.100.22"
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
@@ -8,7 +8,6 @@
 #include <FS.h>
 #include <time.h>
 #include <ArduinoOTA.h>
-#include <NtpClientLib.h>
 #include <TimeLib.h>
 
 
@@ -18,8 +17,8 @@
 // #define DEVICE_CREDENTIAL "gAiu$u1wGJ9D"
 
 #define USERNAME "SHLabs"
-#define DEVICE_ID "test"
-#define DEVICE_CREDENTIAL "qXqg0bOzy6X3"
+#define DEVICE_ID "lock0"
+#define DEVICE_CREDENTIAL "lXRkg%odXWp@"
 
 // Informações do WiFi
 #define SSID_STA "soholabs"
@@ -43,10 +42,6 @@ ThingerESP8266 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
 
 //NeoPixel
 Adafruit_NeoPixel statusLed = Adafruit_NeoPixel(8, D9, NEO_RGB);
-
-//NTPVARIAVIS
-int8_t timeZone = -3;
-int8_t minutesTimeZone = 0;
 
 // Flags
 bool Status;
@@ -178,26 +173,6 @@ void ledController(){
   
 }
 
-void toggleWiFiStatus(){
-  ledCounter = 0;
-  ledMode = "blink-blue";
-}
-/*------------------------------NTP Client -----------------------------------*/
-void processSyncEvent (NTPSyncEvent_t ntpEvent) {
-    if (ntpEvent) {
-        Serial.print ("Time Sync error: ");
-        if (ntpEvent == noResponse)
-            Serial.println ("NTP server not reachable");
-        else if (ntpEvent == invalidAddress)
-            Serial.println ("Invalid NTP server address");
-    } else {
-        Serial.print ("Got NTP time: ");
-        Serial.println (NTP.getTimeDateString (NTP.getLastNTPSync ()));
-    }
-}
-
-boolean syncEventTriggered = false; // True if a time even has been triggered
-NTPSyncEvent_t ntpEvent; // Last triggered event
 /*------------------------------Rotinas RFID----------------------------------*/
 
 void setupRFID(int rfidss, int rfidgain) {
@@ -364,33 +339,33 @@ bool userCheck(String uid){
 void onlineMode(){
   if (NEXT_OPERATION_MODE != OPERATION_MODE){
     if (NEXT_OPERATION_MODE == "normal"){
-      digitalWrite(VOLT_PIN, LOW);
-      digitalWrite(RINT_PIN, HIGH);
-      digitalWrite(REXT_PIN, HIGH);
+      digitalWrite(VOLT_PIN, HIGH);
+      digitalWrite(RINT_PIN, LOW);
+      digitalWrite(REXT_PIN, LOW);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
     if (NEXT_OPERATION_MODE == "night"){
-      digitalWrite(VOLT_PIN, LOW);
-      digitalWrite(RINT_PIN, LOW);
-      digitalWrite(REXT_PIN, HIGH);
+      digitalWrite(VOLT_PIN, HIGH);
+      digitalWrite(RINT_PIN, HIGH);
+      digitalWrite(REXT_PIN, LOW);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
     if (NEXT_OPERATION_MODE == "open"){
+      digitalWrite(VOLT_PIN, LOW);
+      digitalWrite(RINT_PIN, LOW);
+      digitalWrite(REXT_PIN, LOW);
+      OPERATION_MODE = NEXT_OPERATION_MODE;
+    }
+    if (NEXT_OPERATION_MODE == "close"){
       digitalWrite(VOLT_PIN, HIGH);
       digitalWrite(RINT_PIN, HIGH);
       digitalWrite(REXT_PIN, HIGH);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
-    if (NEXT_OPERATION_MODE == "close"){
-      digitalWrite(VOLT_PIN, LOW);
-      digitalWrite(RINT_PIN, LOW);
-      digitalWrite(REXT_PIN, LOW);
-      OPERATION_MODE = NEXT_OPERATION_MODE;
-    }
     if (NEXT_OPERATION_MODE == "locked"){
-      digitalWrite(VOLT_PIN, LOW);
-      digitalWrite(RINT_PIN, LOW);
-      digitalWrite(REXT_PIN, LOW);
+      digitalWrite(VOLT_PIN, HIGH);
+      digitalWrite(RINT_PIN, HIGH);
+      digitalWrite(REXT_PIN, HIGH);
       OPERATION_MODE = NEXT_OPERATION_MODE;
     }
   }
@@ -407,13 +382,13 @@ void onlineMode(){
 
 void openDoor(){
   doorTimer = millis()+6000;
-  digitalWrite(VOLT_PIN, HIGH);
+  digitalWrite(VOLT_PIN, LOW);
 }
 
 void closeDoor(){
   if (doorTimer != 0)
     if (millis() > doorTimer){
-      digitalWrite(VOLT_PIN, LOW);
+      digitalWrite(VOLT_PIN, HIGH);
       doorTimer = 0;
     }
 }
@@ -422,13 +397,6 @@ void setup() {
   Serial.begin(115200);
   statusLed.begin();
 
-  NTP.begin ("a.st1.ntp.br", timeZone, false, minutesTimeZone);
-  NTP.setInterval (3600);
-
-  NTP.onNTPSyncEvent ([](NTPSyncEvent_t event) {
-        ntpEvent = event;
-        syncEventTriggered = true;
-    });
   // inicializa RFID
   setupRFID(rfidss, rfidgain);
 
@@ -446,9 +414,9 @@ void setup() {
   pinMode(VOLT_PIN, OUTPUT);
   pinMode(RINT_PIN, OUTPUT);
   pinMode(REXT_PIN, OUTPUT);
-  digitalWrite(VOLT_PIN, LOW);
-  digitalWrite(RINT_PIN, LOW);
-  digitalWrite(REXT_PIN, HIGH);
+  digitalWrite(VOLT_PIN, HIGH);
+  digitalWrite(RINT_PIN, HIGH);
+  digitalWrite(REXT_PIN, LOW);
 
 
   thing.add_wifi(SSID_STA, SSID_PASSWORD);
@@ -547,12 +515,6 @@ void setup() {
     userInfo(checkuid);
   };
 
-  // NTP EVENTS
-  NTP.onNTPSyncEvent ([](NTPSyncEvent_t event) {
-        ntpEvent = event;
-        syncEventTriggered = true;
-    });
-
   // set OTA hostname
   const char *hostname = "entrada";
   ArduinoOTA.setHostname(hostname);
@@ -610,12 +572,14 @@ void loop() {
   closeDoor();
   if ((WiFi.status() == WL_CONNECTED) && !(WiFi.localIP() == INADDR_NONE)){
     Status = true;
+    ledMode = "pulse-white";
   }
-  else Status = false;
-  if (syncEventTriggered) {
-        processSyncEvent (ntpEvent);
-        syncEventTriggered = false;
+  else {
+    ledMode = "pulse-blue";
+    Status = false;  
   }
+  Status = false;
+
   if (uid != ""){
     pson data;
     data["lock_id"] = DEVICE_ID;
