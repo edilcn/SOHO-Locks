@@ -8,7 +8,6 @@
 #include <FS.h>
 #include <time.h>
 #include <ArduinoOTA.h>
-#include <NtpClientLib.h>
 #include <TimeLib.h>
 
 
@@ -34,10 +33,6 @@ ThingerESP8266 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
 //NeoPixel
 Adafruit_NeoPixel statusLed = Adafruit_NeoPixel(1, D9, NEO_RGB);
 
-//NTPVARIAVIS
-int8_t timeZone = -3;
-int8_t minutesTimeZone = 0;
-
 // Flags
 bool Status;
 
@@ -57,6 +52,8 @@ int ledDirection = 1;
 
 uint doorTimer = 0;
 
+String Log;
+uint32_t minutes;
 
 /*------------------------------Rotinas LED----------------------------------*/
 void ledController(){
@@ -145,22 +142,7 @@ void toggleWiFiStatus(){
  ledCounter = 0;
  ledMode = "blink-yellow";
 }
-/*------------------------------NTP Client -----------------------------------*/
-void processSyncEvent (NTPSyncEvent_t ntpEvent) {
-   if (ntpEvent) {
-       Serial.print ("Time Sync error: ");
-       if (ntpEvent == noResponse)
-           Serial.println ("NTP server not reachable");
-       else if (ntpEvent == invalidAddress)
-           Serial.println ("Invalid NTP server address");
-   } else {
-       Serial.print ("Got NTP time: ");
-       Serial.println (NTP.getTimeDateString (NTP.getLastNTPSync ()));
-   }
-}
 
-boolean syncEventTriggered = false; // True if a time even has been triggered
-NTPSyncEvent_t ntpEvent; // Last triggered event
 /*------------------------------Rotinas RFID----------------------------------*/
 
 void setupRFID(int rfidss, int rfidgain) {
@@ -187,6 +169,13 @@ bool tagReader(){
 }
 
 /*----------------------------Modos de operação-------------------------------*/
+void notification(){
+  Log = "";
+  Log += "Time: ";
+  Log += 5*(minutes++);
+}
+
+
 void onlineMode(){
   if (tagReader())
     thing.stream(thing["tag"]);
@@ -209,13 +198,6 @@ void setup() {
  Serial.begin(115200);
  statusLed.begin();
 
- NTP.begin ("a.st1.ntp.br", timeZone, false, minutesTimeZone);
- NTP.setInterval (3600);
-
- NTP.onNTPSyncEvent ([](NTPSyncEvent_t event) {
-       ntpEvent = event;
-       syncEventTriggered = true;
-   });
  // inicializa RFID
  setupRFID(rfidss, rfidgain);
 
@@ -256,11 +238,9 @@ void setup() {
    out = uid;
  };
 
- // NTP EVENTS
- NTP.onNTPSyncEvent ([](NTPSyncEvent_t event) {
-       ntpEvent = event;
-       syncEventTriggered = true;
-   });
+ thing["notification"] >> [](pson& out){
+  out = Log;
+ };
 
  // set OTA hostname
  const char *hostname = "lock";
@@ -321,10 +301,7 @@ void loop() {
    Status = true;
  }
  else Status = false;
- if (syncEventTriggered) {
-       processSyncEvent (ntpEvent);
-       syncEventTriggered = false;
- }
+
  if (uid != ""){
    pson data;
    data["lock_id"] = DEVICE_ID;
