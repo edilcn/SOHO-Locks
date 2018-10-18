@@ -88,6 +88,7 @@ int value;
 
 String Log;
 uint32_t minutes;
+uint timercount;
 
 
 /*------------------------------Rotinas LED----------------------------------*/
@@ -427,6 +428,8 @@ void setup() {
   digitalWrite(RINT_PIN, HIGH);
   digitalWrite(REXT_PIN, LOW);
 
+  Log = "First Setup";
+
 
   thing.add_wifi(SSID_STA, SSID_PASSWORD);
 
@@ -585,6 +588,10 @@ void loop() {
   closeDoor();
   if ((WiFi.status() == WL_CONNECTED) && !(WiFi.localIP() == INADDR_NONE)){
     Status = true;
+    if (millis() > timercount) {
+      notification();
+      timercount = millis() + 300000;
+    }
     ledMode = "pulse-white";
   }
   else {
